@@ -80,33 +80,33 @@ int main(int argc, char **argv)
 
 		/*Rebre*/
 		result = read(newFd, buffer_rebut, 256);
-		printf("Missatge rebut del client(bytes %d): %s\n",	result, buffer);
+		printf("Missatge rebut del client(bytes %d): %s\n",	result, buffer_rebut);
 
 		/*Fer procés necessari amb els casos*/
 		comunicacio(buffer_rebut, buffer_enviat);
 
 		/*Enviar*/
-		result = write(newFd, buffer_enviat, strlen(buffer)+1); //+1 per enviar el 0 final de cadena
-		printf("Missatge enviat a client(bytes %d): %s\n",	result, missatge);
+		result = write(newFd, buffer_enviat, strlen(buffer_enviat)+1); //+1 per enviar el 0 final de cadena
+		printf("Missatge enviat a client(bytes %d): %s\n",	result, buffer_enviat);
 
 		/*Tancar el socket fill*/
 		if (tancar = 1)
 		result = close(newFd);
-		end if;
+		
 	}
 	
 
 	return 0;
 }
 
-void comunicacio(char buffer_rebut, char buffer_enviat, int tancar){
+void comunicacio(char buffer_rebut[256], char buffer_enviat[256], int tancar){
 	
 	int			v;
 	char		temps[2];
 	int			num_mostres;
+	float		mitjana;
 	
-	
-	switch (buffer_rebut[1] ){
+	switch (buffer_rebut[1]){
 	
 		case 'M':
 			v = buffer_rebut[2];
@@ -118,20 +118,26 @@ void comunicacio(char buffer_rebut, char buffer_enviat, int tancar){
 			printf("Nº de mostres:%s\n", buffer_rebut[5]);
 			
 			if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
-				buffer_enviat = {"{","M",1,"}"};
+				strcpy(buffer_enviat,"{M1}");
 			else if (buffer_rebut[2] > 1 || (buffer_rebut[3] > 2 && buffer_rebut[4] > 0) || buffer_rebut[5] > 9)
-				buffer_enviat = {"{","M",2,"}"};
+				strcpy(buffer_enviat,"{M2}");
 			else if (buffer_rebut[2] = 0)
 				tancar = 1;
 			else
-				buffer_enviat = {"{","M",0,"}"};
-			end if;
+				strcpy(buffer_enviat,"{M0}");
 			
 		break;
 			
 		case 'U':
 			
+			valor_mitjana(num_mostres, mitjana);
+			printf("El valor de la mitjana es: %.2f\n", mitjana);
 			
+			if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
+				strcpy(buffer_enviat,"{U1}");
+			else
+				strcpy(buffer_enviat[4], mitjana);
+				strcpy(buffer_enviat,"{U0}");
 		break;
 			
 		case 'X':
@@ -153,19 +159,28 @@ void comunicacio(char buffer_rebut, char buffer_enviat, int tancar){
 	
 }
 
-void numeros_random(int num_mostres){
+void valor_mitjana(int num_mostres, float mitjana){
 
-	int num;
+	float num;
+	float total_numeros[256];
 	int i;
+	int j;
 	
-	i = 0;
-	
-	for (i=0 ; i < num_mostres ;){
+	for (i=0 ; i<num_mostres ;){
 	num = rand () % 21 + 10;
-	printf("%d\n", num);
+	total_numeros[i]=num;
 	i++;
 	}
 
+	for (j=0 ; j<num_mostres ;){
+	mitjana = mitjana + total_numeros[j];
+	j++;
+	}
+	mitjana = mitjana/num_mostres;
+	
+	printf("El valor de la mitjana es: %.2f\n", mitjana);
+	
+	return mitjana;
 
 }
 
