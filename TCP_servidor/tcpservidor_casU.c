@@ -103,8 +103,11 @@ void comunicacio(char buffer_rebut[256], char buffer_enviat[256], int tancar){
 	
 	int			v;
 	char		temps[2];
-	int			num_mostres;
+	float			num_mostres;
 	float		mitjana;
+	char		num_mitjana;
+	
+	gcvt(mitjana, 5, num_mitjana);
 	
 	switch (buffer_rebut[1]){
 	
@@ -136,8 +139,7 @@ void comunicacio(char buffer_rebut[256], char buffer_enviat[256], int tancar){
 			if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
 				strcpy(buffer_enviat,"{U1}");
 			else
-				strcpy(buffer_enviat[4], mitjana);
-				strcpy(buffer_enviat,"{U0}");
+				sprintf(&buffer_enviat[3],"%s", num_mitjana);
 		break;
 			
 		case 'X':
@@ -156,10 +158,10 @@ void comunicacio(char buffer_rebut[256], char buffer_enviat[256], int tancar){
 		
 			break;	
 
-	
+	}
 }
 
-void valor_mitjana(int num_mostres, float mitjana){
+float valor_mitjana(float num_mostres, float mitjana){
 
 	float num;
 	float total_numeros[256];
