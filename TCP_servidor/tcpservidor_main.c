@@ -39,9 +39,13 @@
 #define SERVER_MAX_CONNECTIONS	4
 #define REQUEST_MSG_SIZE	1024
 
+#define BUFFERRECIVE_TOTAL		12
 
-int main(int argc, char **argv)
-{
+void comunicacio (char buffer_rebut[], char buffer_enviat[], int tancar);
+void missatge (float *mitjana_p, float *maxima_p, float *minima_p, float * contador_p, int num_mostres);
+
+int main(int argc, char **argv){
+    
 	struct 		sockaddr_in	serverAddr;
 	struct 		sockaddr_in	clientAddr;
 	int			sockAddrSize;
@@ -49,8 +53,8 @@ int main(int argc, char **argv)
 	int			newFd;
 	int			nRead;
 	int 		result;
-	char		buffer_rebut[256];
-	char		buffer_enviat[256];
+	char		buffer_rebut[BUFFERRECIVE_TOTAL];
+	char		buffer_enviat[BUFFERRECIVE_TOTAL];
 	int			tancar;
 	
 
@@ -76,15 +80,22 @@ int main(int argc, char **argv)
 
 		/*Esperar conexió. sFd: socket pare, newFd: socket fill*/
 		newFd=accept(sFd, (struct sockaddr *) &clientAddr, &sockAddrSize);
-		printf("Connexió acceptada del client: adreça %s, port %d\n",	inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
+		printf("Connexió acceptada del client: adreça %s, port %d\n",inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
+
+		memset( buffer_rebut, 0, BUFFERRECIVE_TOTAL );
+		memset( buffer_enviat, 0, BUFFERRECIVE_TOTAL );
 
 		/*Rebre*/
-		result = read(newFd, buffer_rebut, 256);
+		result = read(newFd, buffer_rebut, BUFFERRECIVE_TOTAL);
 		printf("Missatge rebut del client(bytes %d): %s\n",	result, buffer_rebut);
 
 		/*Fer procés necessari amb els casos*/
-		comunicacio(buffer_rebut, buffer_enviat);
-
+		
+	
+	
+		comunicacio (buffer_rebut, buffer_enviat, tancar);
+		
+		
 		/*Enviar*/
 		result = write(newFd, buffer_enviat, strlen(buffer_enviat)+1); //+1 per enviar el 0 final de cadena
 		printf("Missatge enviat a client(bytes %d): %s\n",	result, buffer_enviat);
@@ -92,95 +103,138 @@ int main(int argc, char **argv)
 		/*Tancar el socket fill*/
 		if (tancar = 1)
 		result = close(newFd);
-		
-	}
+	}//sortida de while
 	
 
 	return 0;
-}
+}//sortida del main
 
-void comunicacio(char buffer_rebut[256], char buffer_enviat[256], int tancar){
+void comunicacio(char buffer_rebut[], char buffer_enviat[], int tancar){
 	
-	int			v;
+	//memset(buffer_enviat, '\0', 12);
+	//buffer_enviat[12]= '0';
+	
 	char		temps[2];
-	int			num_mostres;
-	float		mitjana;
+	int 		num_mostres;
+	float 		mitjana, maxima, minima, contador;
+
+		num_mostres=buffer_rebut[5]-'0';//invertir a un tipo integer
+		temps[0] = buffer_rebut[3];//guardar temps
+		temps[1] = buffer_rebut[4];
+		
 	
 	switch (buffer_rebut[1]){
-	
+		
+			
 		case 'M':
-			v = buffer_rebut[2];
-			temps[0] = buffer_rebut[3];
-			temps[1] = buffer_rebut[4];
-			num_mostres = buffer_rebut[5];
-			printf("Estat de la maquina (0 = aturar 1 = marxa):%s\n", buffer_rebut[2]);
-			printf("Temps de mostreig:%s%s\n", buffer_rebut[3], buffer_rebut[4]);
-			printf("Nº de mostres:%s\n", buffer_rebut[5]);
-			
+	
 			if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
-				strcpy(buffer_enviat,"{M1}");
-			else if (buffer_rebut[2] > 1 || (buffer_rebut[3] > 2 && buffer_rebut[4] > 0) || buffer_rebut[5] > 9)
-				strcpy(buffer_enviat,"{M2}");
-			else if (buffer_rebut[2] = 0)
-				tancar = 1;
+				sprintf(buffer_enviat,"{M1}");
 			else
-				strcpy(buffer_enviat,"{M0}");
 			
+				
+				printf("mitjana:%f\n",mitjana);
+				printf("maxima_p:%f\n",maxima);
+				printf("minima_p:%f\n",minima);
+				printf("minima_p:%f\n",contador);
+		
+				sprintf(buffer_enviat,"{M0}");	
+				printf("%s\n", buffer_enviat);
 		break;
 			
 		case 'U':
 			
-			valor_mitjana(num_mostres, mitjana);
-			printf("El valor de la mitjana es: %.2f\n", mitjana);
-			
 			if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
-				strcpy(buffer_enviat,"{U1}");
+				sprintf(buffer_enviat,"{U1}");
 			else
-				strcpy(buffer_enviat[4], mitjana);
-				strcpy(buffer_enviat,"{U0}");
+				
+			
+				
+				missatge(&mitjana, &maxima, &minima, &contador, num_mostres);//llamar funcio m
+				sprintf(buffer_enviat,"{U0%2.2f}", mitjana);
+				printf("mitjana:%f\n",mitjana);
+				printf("maxima_p:%f\n",maxima);
+				printf("minima_p:%f\n",minima);
+				printf("minima_p:%f\n",contador);			
+				
+				printf("\n %s",buffer_enviat);
+				printf("\n");
 		break;
 			
 		case 'X':
+			
+			if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
+				sprintf(buffer_enviat,"{X1}");
+			else
+				sprintf(buffer_enviat,"{X0%2.2f}", maxima);
+			
 				
 			break;
 			
 		case 'Y':
 		
+			
+			if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
+				sprintf(buffer_enviat,"{Y1}");
+			
+			else
+				sprintf(buffer_enviat,"{Y0%3.2f}", minima);
+				
 			break;
 				
 		case 'R':
-		
+
+		if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
+				sprintf(buffer_enviat,"{R1}");
+			else 
+				sprintf(buffer_enviat,"{R0}");
+			
 			break;
 			
 		case 'B':	
+			if (buffer_rebut[1] != 'M' && buffer_rebut[1] !='U' && buffer_rebut[1] !='X' && buffer_rebut[1] != 'Y' && buffer_rebut[1] != 'R' && buffer_rebut[1] != 'B' && buffer_rebut[0] != '{' && buffer_rebut[6] != '}')
+				sprintf(buffer_enviat,"{B1}");
+			else 
+				sprintf(buffer_enviat,"{B0%2.2f}",contador);
 		
 			break;	
 
+				}
+				 //sortida del swtich
 	
+		
 }
 
-void valor_mitjana(int num_mostres, float mitjana){
-
-	float num;
-	float total_numeros[256];
-	int i;
-	int j;
+void missatge(float *mitjana_p, float *maxima_p, float *minima_p, float *contador_p, int num_mostres){
 	
-	for (i=0 ; i<num_mostres ;){
-	num = rand () % 21 + 10;
-	total_numeros[i]=num;
-	i++;
-	}
-
-	for (j=0 ; j<num_mostres ;){
-	mitjana = mitjana + total_numeros[j];
-	j++;
-	}
-	mitjana = mitjana/num_mostres;
+	int i; 
+	float num[9], total, maxima1, minima1, mitjana1, contador1;
+		
+		*contador_p=contador1;
+		*maxima_p=maxima1;
+		*minima_p=minima1;
+		*mitjana_p=mitjana1;
+		contador1=5;
+		
+		for(i=0;i<num_mostres;i++){
+			
+		num[i] = rand() % 21 + 10;//operacio per fer numeros random
+		total+=num[i];	//fer la suma total		
+		}	//sortida del for
+		
+		mitjana1=total/num_mostres;//fer la mitjana 
+		maxima1= num[0];
+		minima1 = num[0];
 	
-	printf("El valor de la mitjana es: %.2f\n", mitjana);
-	
-	return mitjana;
-
-}
-
+	for(i=1;i<num_mostres;i++){
+		
+			if (num[i]> maxima1)
+				maxima1=num[i];
+			else if (num[i]< minima1)
+				minima1=num[i];
+	}//sortida del for
+		*contador_p=contador1;
+		*maxima_p=maxima1;
+		*minima_p=minima1;
+		*mitjana_p=mitjana1;
+}//sortida de la funcio missatge
